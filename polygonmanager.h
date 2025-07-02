@@ -23,10 +23,12 @@ public slots:
     Q_INVOKABLE void removePolygon(Polygon* polygon);
     Q_INVOKABLE void removeSelectedPolygon();
     Q_INVOKABLE void clearAll();
+    Q_INVOKABLE bool validatePolygonParameters(double centerLat, double centerLon, double widthMeters, double heightMeters) const;
 signals:
     void polygonsChanged();
     void selectedPolygonChanged();
     void countChanged();
+    void errorOccurred(const QString& message);
 private:
     static auto appendPolygon(QQmlListProperty<Polygon>* list, Polygon* polygon) -> void;
     static auto polygonCount(QQmlListProperty<Polygon>* list) -> qsizetype;
@@ -64,10 +66,11 @@ public:
     [[nodiscard]] auto selected() const -> bool;
     auto setSelected(bool selected) -> void;
 public slots:
-    Q_INVOKABLE void addVertex(double lat, double lon, int index = -1);
-    Q_INVOKABLE void removeVertex(int index);
-    Q_INVOKABLE void moveVertex(int index, double lat, double lon);
+    Q_INVOKABLE bool addVertex(double lat, double lon, int index = -1);
+    Q_INVOKABLE bool removeVertex(int index);
+    Q_INVOKABLE bool moveVertex(int index, double lat, double lon);
     Q_INVOKABLE QGeoCoordinate getVertex(int index) const;
+    Q_INVOKABLE bool validateCoordinate(double lat, double lon) const;
 signals:
     void idChanged();
     void pathChanged();
@@ -77,6 +80,7 @@ signals:
     void areaChanged();
     void vertexCountChanged();
     void selectedChanged();
+    void validationError(const QString& message);
 private:
     auto calculateArea() -> void;
 

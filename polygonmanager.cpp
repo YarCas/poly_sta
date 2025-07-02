@@ -41,6 +41,11 @@ auto PolygonManager::count() const -> int
 }
 Polygon* PolygonManager::createRectangularPolygon(double centerLat, double centerLon, double widthMeters, double heightMeters)
 {
+    if (!validatePolygonParameters(centerLat, centerLon, widthMeters, heightMeters)) {
+        emit errorOccurred("Недопустимые параметры полигона");
+        return nullptr;
+    }
+
     auto* polygon = new Polygon(this);
     polygon->setId(QUuid::createUuid().toString(QUuid::WithoutBraces));
     polygon->setColor(QColor(255, 0, 0, 100));
@@ -86,6 +91,23 @@ auto PolygonManager::clearAll() -> void
     m_polygons.clear();
     emit polygonsChanged();
     emit countChanged();
+}
+
+bool PolygonManager::validatePolygonParameters(double centerLat, double centerLon, double widthMeters, double heightMeters) const
+{
+    if (centerLat < -90.0 || centerLat > 90.0) {
+        return false;
+    }
+    if (centerLon < -180.0 || centerLon > 180.0) {
+        return false;
+    }
+    if (widthMeters <= 0.0 || heightMeters <= 0.0) {
+        return false;
+    }
+    if (widthMeters > 40075000.0 || heightMeters > 20003000.0) {
+        return false;
+    }
+    return true;
 }
 auto PolygonManager::appendPolygon(QQmlListProperty<Polygon>* list, Polygon* polygon) -> void
 {
@@ -199,8 +221,18 @@ auto Polygon::setSelected(bool selected) -> void
     m_selected = selected;
     emit selectedChanged();
 }
-auto Polygon::addVertex(double lat, double lon, int index) -> void
+bool Polygon::addVertex(double lat, double lon, int index)
 {
+    if (!validateCoordinate(lat, lon)) {
+        emit validationError("Недопустимые координаты вершины");
+        return false;
+    }
+
+    if (m_path.size() >= 50) {
+        emit validationError("Превышено максимальное количество вершин (50)");
+        return false;
+    }
+
     QGeoCoordinate coord(lat, lon);
     QVariant coord_variant = QVariant::fromValue(coord);
     if (index < 0 || index >= m_path.size()) {
@@ -212,26 +244,45 @@ auto Polygon::addVertex(double lat, double lon, int index) -> void
     emit pathChanged();
     emit areaChanged();
     emit vertexCountChanged();
+    return true;
 }
-auto Polygon::removeVertex(int index) -> void
+bool Polygon::removeVertex(int index)
 {
-    if (index >= 0 && index < m_path.size()) {
-        m_path.removeAt(index);
-        calculateArea();
-        emit pathChanged();
-        emit areaChanged();
-        emit vertexCountChanged();
+    if (index < 0 || index >= m_path.size()) {
+        emit validationError("Недопустимый индекс вершины");
+        return false;
     }
+
+    if (m_path.size() <= 3) {
+        emit validationError("Нельзя удалить вершину: минимум 3 вершины");
+        return false;
+    }
+
+    m_path.removeAt(index);
+    calculateArea();
+    emit pathChanged();
+    emit areaChanged();
+    emit vertexCountChanged();
+    return true;
 }
-auto Polygon::moveVertex(int index, double lat, double lon) -> void
+bool Polygon::moveVertex(int index, double lat, double lon)
 {
-    if (index >= 0 && index < m_path.size()) {
-        QGeoCoordinate coord(lat, lon);
-        m_path[index] = QVariant::fromValue(coord);
-        calculateArea();
-        emit pathChanged();
-        emit areaChanged();
+    if (index < 0 || index >= m_path.size()) {
+        emit validationError("Недопустимый индекс вершины");
+        return false;
     }
+
+    if (!validateCoordinate(lat, lon)) {
+        emit validationError("Недопустимые координаты вершины");
+        return false;
+    }
+
+    QGeoCoordinate coord(lat, lon);
+    m_path[index] = QVariant::fromValue(coord);
+    calculateArea();
+    emit pathChanged();
+    emit areaChanged();
+    return true;
 }
 QGeoCoordinate Polygon::getVertex(int index) const
 {
@@ -240,6 +291,11 @@ QGeoCoordinate Polygon::getVertex(int index) const
     }
     return QGeoCoordinate();
 }
+bool Polygon::validateCoordinate(double lat, double lon) const
+{
+    return (lat >= -90.0 && lat <= 90.0 && lon >= -180.0 && lon <= 180.0);
+}
+
 auto Polygon::calculateArea() -> void
 {
     if (m_path.size() < 3) {
