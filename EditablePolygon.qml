@@ -6,11 +6,10 @@ Item {
   id: root
 
   property Polygon polygon
-  property Map map
 
   Component.onCompleted: {
     console.log("EditablePolygon: Component completed for polygon:", polygon ? polygon.id : "null")
-    console.log("EditablePolygon: Map reference:", map ? "valid" : "null")
+    console.log("EditablePolygon: Parent map reference:", parent ? "valid" : "null")
     if (polygon) {
       console.log("EditablePolygon: Polygon path length:", polygon.path ? polygon.path.length : 0)
       console.log("EditablePolygon: Polygon color:", polygon.color)
@@ -20,7 +19,7 @@ Item {
   // Main polygon
   MapPolygon {
     id: mapPolygon
-    parent: map
+    parent: root.parent
     autoFadeIn: false
     path: polygon ? polygon.path : []
     color: polygon ? polygon.color : "green"
@@ -37,7 +36,7 @@ Item {
   // Selection highlight overlay
   MapPolygon {
     id: selectionHighlight
-    parent: map
+    parent: root.parent
     autoFadeIn: false
     path: polygon ? polygon.path : []
     color: "transparent"
@@ -51,7 +50,7 @@ Item {
   Repeater {
     model: polygon ? polygon.vertexCount : 0
     delegate: MapQuickItem {
-      parent: map
+      parent: root.parent
       coordinate: polygon ? polygon.getVertex(index) : QtPositioning.coordinate()
       anchorPoint.x: vertexHandle.width / 2
       anchorPoint.y: vertexHandle.height / 2
@@ -103,8 +102,8 @@ Item {
             vertexHandle.scale = 1.3
           }
           onReleased: {
-            if (dragging && polygon) {
-              var coord = map.toCoordinate(Qt.point(parent.x + width/2, parent.y + height/2))
+            if (dragging && polygon && root.parent) {
+              var coord = root.parent.toCoordinate(Qt.point(parent.x + width/2, parent.y + height/2))
               polygon.moveVertex(index, coord.latitude, coord.longitude)
             }
             dragging = false
@@ -119,7 +118,7 @@ Item {
   Repeater {
     model: polygon ? polygon.vertexCount : 0
     delegate: MapQuickItem {
-      parent: map
+      parent: root.parent
       coordinate: {
         if (!polygon || polygon.vertexCount < 2) return QtPositioning.coordinate()
         var current = polygon.getVertex(index)
@@ -178,8 +177,8 @@ Item {
           anchors.fill: parent
           hoverEnabled: true
           onClicked: {
-            if (polygon) {
-              var coord = map.toCoordinate(Qt.point(parent.x + width/2, parent.y + height/2))
+            if (polygon && root.parent) {
+              var coord = root.parent.toCoordinate(Qt.point(parent.x + width/2, parent.y + height/2))
               polygon.addVertex(coord.latitude, coord.longitude, index + 1)
             }
           }

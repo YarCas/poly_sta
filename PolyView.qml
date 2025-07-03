@@ -360,7 +360,6 @@ Item {
           model: manager.polygons
           delegate: EditablePolygon {
             polygon: modelData
-            map: map
           }
         }
         
