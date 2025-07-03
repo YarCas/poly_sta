@@ -8,20 +8,36 @@ Item {
   property Polygon polygon
   property Map map
 
+  Component.onCompleted: {
+    console.log("EditablePolygon: Component completed for polygon:", polygon ? polygon.id : "null")
+    console.log("EditablePolygon: Map reference:", map ? "valid" : "null")
+    if (polygon) {
+      console.log("EditablePolygon: Polygon path length:", polygon.path ? polygon.path.length : 0)
+      console.log("EditablePolygon: Polygon color:", polygon.color)
+    }
+  }
+
   // Main polygon
   MapPolygon {
     id: mapPolygon
+    parent: map
     autoFadeIn: false
     path: polygon ? polygon.path : []
     color: polygon ? polygon.color : "green"
     border.color: polygon && polygon.selected ? "#ff6600" : (polygon ? polygon.borderColor : "green")
     border.width: polygon && polygon.selected ? 3 : (polygon ? polygon.borderWidth : 1)
     opacity: polygon && polygon.selected ? 0.8 : 0.6
+    
+    Component.onCompleted: {
+      console.log("EditablePolygon: MapPolygon created with path:", path ? path.length : 0, "points")
+      console.log("EditablePolygon: MapPolygon parent:", parent ? "set" : "null")
+    }
   }
 
   // Selection highlight overlay
   MapPolygon {
     id: selectionHighlight
+    parent: map
     autoFadeIn: false
     path: polygon ? polygon.path : []
     color: "transparent"
@@ -35,6 +51,7 @@ Item {
   Repeater {
     model: polygon ? polygon.vertexCount : 0
     delegate: MapQuickItem {
+      parent: map
       coordinate: polygon ? polygon.getVertex(index) : QtPositioning.coordinate()
       anchorPoint.x: vertexHandle.width / 2
       anchorPoint.y: vertexHandle.height / 2
@@ -102,6 +119,7 @@ Item {
   Repeater {
     model: polygon ? polygon.vertexCount : 0
     delegate: MapQuickItem {
+      parent: map
       coordinate: {
         if (!polygon || polygon.vertexCount < 2) return QtPositioning.coordinate()
         var current = polygon.getVertex(index)

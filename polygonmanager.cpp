@@ -7,7 +7,9 @@ PolygonManager::PolygonManager(QObject* parent)
     : QObject(parent)
     , m_selected_polygon(nullptr)
 {
+    qDebug() << "PolygonManager: Initializing polygon manager";
     createRectangularPolygon(59.9311, 30.3609, 2000, 1500);
+    qDebug() << "PolygonManager: Created test polygon at Saint Petersburg coordinates";
 }
 PolygonManager::~PolygonManager()
 {
@@ -42,26 +44,54 @@ auto PolygonManager::count() const -> int
 }
 Polygon* PolygonManager::createRectangularPolygon(double centerLat, double centerLon, double widthMeters, double heightMeters)
 {
+    qDebug() << "PolygonManager: Creating rectangular polygon at" << centerLat << "," << centerLon 
+             << "with size" << widthMeters << "x" << heightMeters;
+    
     if (!validatePolygonParameters(centerLat, centerLon, widthMeters, heightMeters)) {
+        qDebug() << "PolygonManager: Invalid polygon parameters";
         emit errorOccurred("Недопустимые параметры полигона");
         return nullptr;
     }
 
     auto* polygon = new Polygon(this);
-    polygon->setId(QUuid::createUuid().toString(QUuid::WithoutBraces));
+    QString polygonId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    polygon->setId(polygonId);
     polygon->setColor(QColor(255, 0, 0, 100));
     polygon->setBorderColor(QColor(255, 0, 0, 255));
     polygon->setBorderWidth(2);
+    
+    qDebug() << "PolygonManager: Created polygon with ID:" << polygonId;
+
     auto const earth_radius = 6371000.0;
     auto const lat_offset = (heightMeters / 2.0) / earth_radius * (180.0 / M_PI);
     auto const lon_offset = (widthMeters / 2.0) / (earth_radius * qCos(centerLat * M_PI / 180.0)) * (180.0 / M_PI);
+    
+    qDebug() << "PolygonManager: Calculated offsets - lat:" << lat_offset << "lon:" << lon_offset;
+
+    QGeoCoordinate coord1(centerLat - lat_offset, centerLon - lon_offset);
+    QGeoCoordinate coord2(centerLat - lat_offset, centerLon + lon_offset);
+    QGeoCoordinate coord3(centerLat + lat_offset, centerLon + lon_offset);
+    QGeoCoordinate coord4(centerLat + lat_offset, centerLon - lon_offset);
+    
     QVariantList path;
-    path.append(QVariant::fromValue(QGeoCoordinate(centerLat - lat_offset, centerLon - lon_offset)));
-    path.append(QVariant::fromValue(QGeoCoordinate(centerLat - lat_offset, centerLon + lon_offset)));
-    path.append(QVariant::fromValue(QGeoCoordinate(centerLat + lat_offset, centerLon + lon_offset)));
-    path.append(QVariant::fromValue(QGeoCoordinate(centerLat + lat_offset, centerLon - lon_offset)));
+    path.append(QVariant::fromValue(coord1));
+    path.append(QVariant::fromValue(coord2));
+    path.append(QVariant::fromValue(coord3));
+    path.append(QVariant::fromValue(coord4));
+    
+    qDebug() << "PolygonManager: Created path with coordinates:";
+    qDebug() << "  " << coord1.latitude() << "," << coord1.longitude();
+    qDebug() << "  " << coord2.latitude() << "," << coord2.longitude();
+    qDebug() << "  " << coord3.latitude() << "," << coord3.longitude();
+    qDebug() << "  " << coord4.latitude() << "," << coord4.longitude();
+
     polygon->setPath(path);
+    
+    qDebug() << "PolygonManager: Polygon area calculated:" << polygon->area() << "m²";
+
     m_polygons.append(polygon);
+    qDebug() << "PolygonManager: Added polygon to list, total count:" << m_polygons.size();
+    
     emit polygonsChanged();
     emit countChanged();
     setSelectedPolygon(polygon);
