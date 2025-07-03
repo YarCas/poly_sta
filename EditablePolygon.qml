@@ -11,6 +11,7 @@ Item {
   // Main polygon
   MapPolygon {
     id: mapPolygon
+    parent: map
     autoFadeIn: false
     path: polygon ? polygon.path : []
     color: polygon ? polygon.color : "green"
@@ -22,6 +23,7 @@ Item {
   // Selection highlight overlay
   MapPolygon {
     id: selectionHighlight
+    parent: map
     autoFadeIn: false
     path: polygon ? polygon.path : []
     color: "transparent"
@@ -35,7 +37,7 @@ Item {
   Repeater {
     model: polygon ? polygon.vertexCount : 0
     delegate: MapQuickItem {
-    //  parent: map
+      parent: map
       coordinate: polygon ? polygon.getVertex(index) : QtPositioning.coordinate()
       anchorPoint.x: vertexHandle.width / 2
       anchorPoint.y: vertexHandle.height / 2
@@ -103,7 +105,7 @@ Item {
   Repeater {
     model: polygon ? polygon.vertexCount : 0
     delegate: MapQuickItem {
-    //  parent: map
+      parent: map
       coordinate: {
         if (!polygon || polygon.vertexCount < 2) return QtPositioning.coordinate()
         var current = polygon.getVertex(index)
