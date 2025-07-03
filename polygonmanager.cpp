@@ -7,6 +7,7 @@ PolygonManager::PolygonManager(QObject* parent)
     : QObject(parent)
     , m_selected_polygon(nullptr)
 {
+    createRectangularPolygon(59.9311, 30.3609, 2000, 1500);
 }
 PolygonManager::~PolygonManager()
 {
